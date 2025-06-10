@@ -1,0 +1,248 @@
+library(readr)
+library(tidyr)
+library(dplyr)
+library(vcfR)
+library(stringr)
+library(ggplot2)
+library(reshape2)
+library(ggridges)
+library(forcats)
+library(splines)
+library(scales)
+
+# data loading
+vcfsample <- read.vcfR('~/Users/svdataset.vcf')
+vcf_pgest_df <- vcfsample@fix %>%
+  as.data.frame()
+
+# formatting into dataframe
+generate_unique_ids <- function(ids) {
+  unique_ids <- ids
+  id_count <- table(ids)
+  for (id in names(id_count [id_count > 1])) {
+    idx <- which(ids == id)
+    unique_ids [idx] <- paste(id, seq_along(idx), sep = "_")
+  }
+  return(unique_ids)
+}
+vcf_pgest_df$ID <- generate_unique_ids(vcf_pgest_df$ID)
+vcfsample@fix <- as.matrix(vcf_pgest_df) # update the VCF file with modified IDs
+gt_matrix <- extract.gt(vcfsample, return.alleles = FALSE)
+
+#extracting SV information
+vcf_pgest_df <- cbind(vcf_pgest_df, gt_matrix)
+vcf_pgest_df$SVTYPE <- str_extract(vcf_pgest_df$ID, "(?<=\\.) [A-Z]{3}(?=\\.)") 
+vcf_pgest_df$POS <- as.numeric(as.character(vcf_pgest_df$POS))
+vcf_pgest_df$SVLEN <- str_extract(vcf_pgest_df$INFO, "(?<=SVLEN=) [-0-9]+")
+vcf_pgest_df$SVLEN <- as.numeric(as.character(vcf_pgest_df$SVLEN))
+View(vcf_pgest_df)
+vcf_pgest_df <- vcf_pgest_df %>%
+  mutate(END = as.numeric(str_extract(INFO, "(?<=END=)\\d+"))) %>%
+  mutate(ABS_LEN = abs(END - POS))
+supplemented_vcf_pgest_df <- vcf_pgest_df %>%
+  mutate(SVLEN = ifelse(is.na(SVLEN), ABS_LEN, SVLEN))
+#View(supplemented_vcf_pgest_df)
+
+#pivot out different sample varietals (in our case, named Atlant, Bienne, Heiya, and Longya)
+vcf_pgest_df_long <- pivot_longer(supplemented_vcf_pgest_df, cols = c("Atlant", "Bienne", "Heiya", "Longya"), names_to = "Location", values_to = "Presence")
+vcf_pgest_df_long <- vcf_pgest_df_long [!is.na(vcf_pgest_df_long$Presence), ]
+vcf_pgest_df_long <- vcf_pgest_df_long %>%
+  filter(SVTYPE %in% c("DEL", "INS", "INV"))
+#View(vcf_pgest_df_long)
+
+# Get SVLEN totals for single genome additions
+# 1 Genome: Atlant
+g1_atlant_svlen <- supplemented_vcf_pgest_df %>%
+  filter(Atlant %in% c("0", "1", "2", "3", "4")) %>%   # Filter rows where Atlant is not NA
+  summarise(total_g1_atlant_SVLEN = sum(SVLEN, na.rm = TRUE),  # Sum of SVLEN, ignoring NA
+            count_g1_atlant_SVLEN = sum(!is.na(SVLEN)))  # Summarise SVLEN, ignoring NA
+g1_atlant_svlen_sum <- g1_atlant_svlen$total_g1_atlant_SVLEN
+g1_atlant_svlen_count <- g1_atlant_svlen$count_g1_atlant_SVLEN
+print(c("Atlant:", g1_atlant_svlen_count, "SVs", g1_atlant_svlen_sum, "bp"))
+# 1 Genome: Bienne
+g1_b_svlen <- supplemented_vcf_pgest_df %>%
+  filter(Bienne %in% c("0", "1", "2", "3", "4")) %>% 
+  summarise(total_g1_b_SVLEN = sum(SVLEN, na.rm = TRUE),
+            count_g1_b_SVLEN = sum(!is.na(SVLEN)))
+g1_b_svlen_sum <- g1_b_svlen$total_g1_b_SVLEN
+g1_b_svlen_count <- g1_b_svlen$count_g1_b_SVLEN
+print(c("Bienne:", g1_b_svlen_count, "SVs", g1_b_svlen_sum, "bp"))
+# 1 Genome: Heiya
+g1_h_svlen <- supplemented_vcf_pgest_df %>%
+  filter(Heiya %in% c("0", "1", "2", "3", "4")) %>% 
+  summarise(total_g1_h_SVLEN = sum(SVLEN, na.rm = TRUE),
+            count_g1_h_SVLEN = sum(!is.na(SVLEN)))
+g1_h_svlen_sum <- g1_h_svlen$total_g1_h_SVLEN
+g1_h_svlen_count <- g1_h_svlen$count_g1_h_SVLEN
+print(c("Heiya:", g1_h_svlen_count, "SVs", g1_h_svlen_sum, "bp"))
+# 1 Genome: Longya
+g1_l_svlen <- supplemented_vcf_pgest_df %>%
+  filter(Longya %in% c("0", "1", "2", "3", "4")) %>% 
+  summarise(total_g1_l_SVLEN = sum(SVLEN, na.rm = TRUE),
+            count_g1_l_SVLEN = sum(!is.na(SVLEN)))
+g1_l_svlen_sum <- g1_l_svlen$total_g1_l_SVLEN
+g1_l_svlen_count <- g1_l_svlen$count_g1_l_SVLEN
+print(c("Longya:", g1_l_svlen_count, "SVs", g1_l_svlen_sum, "bp"))
+
+# pairwise genome length comparisons
+# 2 Genomes: Atlant-Bienne
+g2_ab_svlen <- supplemented_vcf_pgest_df %>%
+  filter(Atlant %in% c("0", "1", "2", "3", "4")) %>%   # Filter rows where Atlant is not NA
+  filter(Bienne %in% c("0", "1", "2", "3", "4")) %>%
+  summarise(total_g2_ab_SVLEN = sum(SVLEN, na.rm = TRUE),  # Sum of SVLEN, ignoring NA
+            count_g2_ab_SVLEN = sum(!is.na(SVLEN)))  # Summarise SVLEN, ignoring NA
+g2_ab_svlen_sum <- g2_ab_svlen$total_g2_ab_SVLEN
+g2_ab_svlen_count <- g2_ab_svlen$count_g2_ab_SVLEN
+print(c("Atlant-Bienne:", g2_ab_svlen_count, "SVs", g2_ab_svlen_sum, "bp"))
+# 2 Genomes: Atlant-Heiya
+g2_ah_svlen <- supplemented_vcf_pgest_df %>%
+  filter(Atlant %in% c("0", "1", "2", "3", "4")) %>%   # Filter rows where Atlant is not NA
+  filter(Heiya %in% c("0", "1", "2", "3", "4")) %>%
+  summarise(total_g2_ah_SVLEN = sum(SVLEN, na.rm = TRUE),  # Sum of SVLEN, ignoring NA
+            count_g2_ah_SVLEN = sum(!is.na(SVLEN)))  # Summarise SVLEN, ignoring NA
+g2_ah_svlen_sum <- g2_ah_svlen$total_g2_ah_SVLEN
+g2_ah_svlen_count <- g2_ah_svlen$count_g2_ah_SVLEN
+print(c("Atlant-Heiya:", g2_ah_svlen_count, "SVs", g2_ah_svlen_sum, "bp"))
+# 2 Genomes: Atlant-Longya
+g2_al_svlen <- supplemented_vcf_pgest_df %>%
+  filter(Atlant %in% c("0", "1", "2", "3", "4")) %>%   # Filter rows where Atlant is not NA
+  filter(Longya %in% c("0", "1", "2", "3", "4")) %>%
+  summarise(total_g2_al_SVLEN = sum(SVLEN, na.rm = TRUE),  # Sum of SVLEN, ignoring NA
+            count_g2_al_SVLEN = sum(!is.na(SVLEN)))  # Summarise SVLEN, ignoring NA
+g2_al_svlen_sum <- g2_al_svlen$total_g2_al_SVLEN
+g2_al_svlen_count <- g2_al_svlen$count_g2_al_SVLEN
+print(c("Atlant-Longya:", g2_al_svlen_count, "SVs", g2_al_svlen_sum, "bp"))
+# 2 Genomes: Bienne-Heiya
+g2_bh_svlen <- supplemented_vcf_pgest_df %>%
+  filter(Bienne %in% c("0", "1", "2", "3", "4")) %>%   # Filter rows where Atlant is not NA
+  filter(Heiya %in% c("0", "1", "2", "3", "4")) %>%
+  summarise(total_g2_bh_SVLEN = sum(SVLEN, na.rm = TRUE),  # Sum of SVLEN, ignoring NA
+            count_g2_bh_SVLEN = sum(!is.na(SVLEN)))  # Summarise SVLEN, ignoring NA
+g2_bh_svlen_sum <- g2_bh_svlen$total_g2_bh_SVLEN
+g2_bh_svlen_count <- g2_bh_svlen$count_g2_bh_SVLEN
+print(c("Bienne-Heiya:", g2_bh_svlen_count, "SVs", g2_bh_svlen_sum, "bp"))
+# 2 Genomes: Bienne-Longya
+g2_bl_svlen <- supplemented_vcf_pgest_df %>%
+  filter(Bienne %in% c("0", "1", "2", "3", "4")) %>%   # Filter rows where Atlant is not NA
+  filter(Longya %in% c("0", "1", "2", "3", "4")) %>%
+  summarise(total_g2_bl_SVLEN = sum(SVLEN, na.rm = TRUE),  # Sum of SVLEN, ignoring NA
+            count_g2_bl_SVLEN = sum(!is.na(SVLEN)))  # Summarise SVLEN, ignoring NA
+g2_bl_svlen_sum <- g2_bl_svlen$total_g2_bl_SVLEN
+g2_bl_svlen_count <- g2_bl_svlen$count_g2_bl_SVLEN
+print(c("Bienne-Longya:", g2_bl_svlen_count, "SVs", g2_bl_svlen_sum, "bp"))
+# 2 Genomes: Heiya-Longya
+g2_hl_svlen <- supplemented_vcf_pgest_df %>%
+  filter(Heiya %in% c("0", "1", "2", "3", "4")) %>%   # Filter rows where Atlant is not NA
+  filter(Longya %in% c("0", "1", "2", "3", "4")) %>%
+  summarise(total_g2_hl_SVLEN = sum(SVLEN, na.rm = TRUE),  # Sum of SVLEN, ignoring NA
+            count_g2_hl_SVLEN = sum(!is.na(SVLEN)))  # Summarise SVLEN, ignoring NA
+g2_hl_svlen_sum <- g2_hl_svlen$total_g2_hl_SVLEN
+g2_hl_svlen_count <- g2_hl_svlen$count_g2_hl_SVLEN
+print(c("Heiya-Longya:", g2_hl_svlen_count, "SVs", g2_hl_svlen_sum, "bp"))
+
+# three-way genome length comparisons
+# 3 Genomes: Atlant-Bienne-Heiya
+g3_abh_svlen <- supplemented_vcf_pgest_df %>%
+  filter(Atlant %in% c("0", "1", "2", "3", "4")) %>%   # Filter rows where Atlant is not NA
+  filter(Bienne %in% c("0", "1", "2", "3", "4")) %>%
+  filter(Heiya %in% c("0", "1", "2", "3", "4")) %>%
+  summarise(total_g3_abh_SVLEN = sum(SVLEN, na.rm = TRUE),  # Sum of SVLEN, ignoring NA
+            count_g3_abh_SVLEN = sum(!is.na(SVLEN)))  # Summarise SVLEN, ignoring NA
+g3_abh_svlen_sum <- g3_abh_svlen$total_g3_abh_SVLEN
+g3_abh_svlen_count <- g3_abh_svlen$count_g3_abh_SVLEN
+print(c("Atlant-Bienne-Heiya:", g3_abh_svlen_count, "SVs", g3_abh_svlen_sum, "bp"))
+# 3 Genomes: Bienne-Heiya-Longya
+g3_bhl_svlen <- supplemented_vcf_pgest_df %>%
+  filter(Bienne %in% c("0", "1", "2", "3", "4")) %>%   # Filter rows where Atlant is not NA
+  filter(Heiya %in% c("0", "1", "2", "3", "4")) %>%
+  filter(Longya %in% c("0", "1", "2", "3", "4")) %>%
+  summarise(total_g3_bhl_SVLEN = sum(SVLEN, na.rm = TRUE),  # Sum of SVLEN, ignoring NA
+            count_g3_bhl_SVLEN = sum(!is.na(SVLEN)))  # Summarise SVLEN, ignoring NA
+g3_bhl_svlen_sum <- g3_bhl_svlen$total_g3_bhl_SVLEN
+g3_bhl_svlen_count <- g3_bhl_svlen$count_g3_bhl_SVLEN
+print(c("Bienne-Heiya-Longya:", g3_bhl_svlen_count, "SVs", g3_bhl_svlen_sum, "bp"))
+# 3 Genomes: Atlant-Heiya-Longya
+g3_ahl_svlen <- supplemented_vcf_pgest_df %>%
+  filter(Atlant %in% c("0", "1", "2", "3", "4")) %>%   # Filter rows where Atlant is not NA
+  filter(Heiya %in% c("0", "1", "2", "3", "4")) %>%
+  filter(Longya %in% c("0", "1", "2", "3", "4")) %>%
+  summarise(total_g3_ahl_SVLEN = sum(SVLEN, na.rm = TRUE),  # Sum of SVLEN, ignoring NA
+            count_g3_ahl_SVLEN = sum(!is.na(SVLEN)))  # Summarise SVLEN, ignoring NA
+g3_ahl_svlen_sum <- g3_ahl_svlen$total_g3_ahl_SVLEN
+g3_ahl_svlen_count <- g3_ahl_svlen$count_g3_ahl_SVLEN
+print(c("Atlant-Heiya-Longya:", g3_ahl_svlen_count, "SVs", g3_ahl_svlen_sum, "bp"))
+# 3 Genomes: Atlant-Bienne-Longya
+g3_abl_svlen <- supplemented_vcf_pgest_df %>%
+  filter(Atlant %in% c("0", "1", "2", "3", "4")) %>%   # Filter rows where Atlant is not NA
+  filter(Bienne %in% c("0", "1", "2", "3", "4")) %>%
+  filter(Longya %in% c("0", "1", "2", "3", "4")) %>%
+  summarise(total_g3_abl_SVLEN = sum(SVLEN, na.rm = TRUE),  # Sum of SVLEN, ignoring NA
+            count_g3_abl_SVLEN = sum(!is.na(SVLEN)))  # Summarise SVLEN, ignoring NA
+g3_abl_svlen_sum <- g3_abl_svlen$total_g3_abl_SVLEN
+g3_abl_svlen_count <- g3_abl_svlen$count_g3_abl_SVLEN
+print(c("Atlant-Bienne-Longya:", g3_abl_svlen_count, "SVs", g3_abl_svlen_sum, "bp"))
+
+# SV lengths for SVs shared across all genome
+# 4 Genomes
+g4_svlen <- supplemented_vcf_pgest_df %>%
+  filter(Atlant %in% c("0", "1", "2", "3", "4")) %>%   # Filter rows where Atlant is not NA
+  filter(Bienne %in% c("0", "1", "2", "3", "4")) %>%
+  filter(Heiya %in% c("0", "1", "2", "3", "4")) %>%
+  filter(Longya %in% c("0", "1", "2", "3", "4")) %>%
+  summarise(total_g4_SVLEN = sum(SVLEN, na.rm = TRUE),  # Sum of SVLEN, ignoring NA
+            count_g4_SVLEN = sum(!is.na(SVLEN)))  # Summarise SVLEN, ignoring NA
+g4_svlen_sum <- g4_svlen$total_g4_SVLEN
+g4_svlen_count <- g4_svlen$count_g4_SVLEN
+print(c("Atlant-Bienne-Heiya-Longya:", g4_svlen_count, "SVs", g4_svlen_sum, "bp"))
+
+# Create pangenome length dataframe
+pangenome_genome_number <- c(0,1,1,1,1,2,2,2,2,2,2,3,3,3,3,4) # number of comparisions for 4 samples
+sv_len <- c(316167074, g1_atlant_svlen_sum, g1_b_svlen_sum, g1_h_svlen_sum, g1_l_svlen_sum,
+            g2_ab_svlen_sum, g2_ah_svlen_sum, g2_al_svlen_sum, g2_bh_svlen_sum, g2_bl_svlen_sum, g2_hl_svlen_sum,
+            g3_abh_svlen_sum, g3_bhl_svlen_sum, g3_ahl_svlen_sum, g3_abl_svlen_sum,
+            g4_svlen_sum)
+pangenome_genome_idcode <- c('bethune', 'a','b','h','l',
+                             'ab','ah','al','bh','bl','hl',
+                             'abh','bhl','ahl','abl',
+                             'abhl')
+pangenome_length <- c(316167074, (316167074+g1_atlant_svlen_sum), (316167074+g1_b_svlen_sum), (316167074+g1_h_svlen_sum), (316167074+g1_l_svlen_sum),
+                      (316167074+g2_ab_svlen_sum), (316167074+g2_ah_svlen_sum), (316167074+g2_al_svlen_sum), (316167074+g2_bh_svlen_sum), (316167074+g2_bl_svlen_sum), (316167074+g2_hl_svlen_sum),
+                      (316167074+g3_abh_svlen_sum), (316167074+g3_bhl_svlen_sum), (316167074+g3_ahl_svlen_sum), (316167074+g3_abl_svlen_sum),
+                      (316167074+g4_svlen_sum))
+
+pangenome_svlen_df <- cbind(pangenome_genome_number, sv_len, pangenome_genome_idcode, pangenome_length)
+#View(pangenome_svlen_df)
+pangenome_svlen_df <- as.data.frame(pangenome_svlen_df)
+pangenome_svlen_df$pangenome_genome_number <- as.numeric(pangenome_svlen_df$pangenome_genome_number)
+pangenome_svlen_df$sv_len <- as.numeric(pangenome_svlen_df$sv_len)
+pangenome_svlen_df$pangenome_length <- as.numeric(pangenome_svlen_df$pangenome_length)
+
+
+# Fit a natural spline model using `lm` and `ns()`
+spline_model <- lm(pangenome_length ~ ns(pangenome_genome_number, df = 4), data = pangenome_svlen_df)
+print(summary(spline_model))
+
+# Generate predictions for plotting the spline curve
+predicted <- data.frame(
+  pangenome_genome_number = seq(min(pangenome_svlen_df$pangenome_genome_number), max(pangenome_svlen_df$pangenome_genome_number), length.out = 100)
+)
+predicted$pangenome_length <- predict(spline_model, newdata = predicted)
+
+# Plot the data points and the spline curve
+svlen_point <- ggplot(pangenome_svlen_df, aes(x = pangenome_genome_number, y = pangenome_length / 1e6)) +
+  geom_line(data = predicted, aes(x = pangenome_genome_number, y = pangenome_length / 1e6), color = "#90b648", size = 1)+
+  geom_point(size = 3, alpha = 0.6) +
+  labs(
+    x = "Genome Number") +
+  scale_y_continuous(
+    name = "Pangenome Length (Mb)",  # Rename the y-axis
+    limits = c(316167000 / 1e6, 316210000 / 1e6),
+    labels = label_number(scale = 1, suffix = " Mb")  # Add "Mb" to the labels
+  ) +
+  theme_minimal()
+svlen_point
+
+ggsave(pangenome_len_curve, 
+       filename = "/Users/esmepadgett/mbiolathome/pangenome_len_curve.pdf",
+       device = "pdf",
+       height = 4, width = 8, units = "in")
