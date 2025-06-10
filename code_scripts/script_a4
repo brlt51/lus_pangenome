@@ -1,0 +1,77 @@
+library(adegenet)
+library(poppr)
+library(dplyr)
+library(reshape2)
+library(ggplot2)
+library(RColorBrewer)
+library(scales)
+library(vcfR)
+
+# Import vcf file
+myvcf_file = '{yourfile.vcf}'
+mysample.vcf = read.vcfR(myvcf_file, verbose = FALSE)
+vcf_df <- as.data.frame(mysample.vcf@fix, stringsAsFactors = FALSE) # replace "." with "_" in columns 1 (CHROM) and 3 (ID)
+
+# Replace any abnormal text string characters
+vcf_df$CHROM <- gsub("\\#", "_", vcf_df$CHROM)
+vcf_df$ID <- gsub("\\.", "_", vcf_df$ID)
+#make column names unique
+extracted_part <- sapply(strsplit(vcf_df$CHROM, "_"), function(x) tail(x, 1))
+vcf_df$ID <- paste(extracted_part, vcf_df$ID, sep = "_")
+vcf_df$ID <- make.unique(vcf_df$ID)
+vcf_df$ID <- gsub("\\.", "_", vcf_df$ID)
+
+# Format file for R to read
+mysample.vcf@fix <- as.matrix(vcf_df)
+mysample.light <- vcfR2genind(mysample.vcf) #Error in extract.gt(x, return.alleles = return.alleles) : ID column contains non-unique names
+x = tab(mysample.light, NA.method = NULL)
+x [is.na(x)] <- 0
+
+# Perform PCA
+pca1 = dudi.pca(x, scannf = FALSE, scale = FALSE, nf = 3)
+percent = pca1$eig/sum(pca1$eig)*100
+
+png("/Users/esmepadgett/mbiolathome/Eigenplot.png", width = 400, height = 300)
+Eigenplot <- barplot(percent, ylab = "Genetic variance explained by eigenvectors (%)", ylim = c(0,100),
+        names.arg = round(percent, 1))
+dev.off()
+
+## Visualize PCA results
+# Create a data.frame containing individual coordinates
+ind_coords = as.data.frame(pca1$li)
+# Rename columns of dataframe
+colnames(ind_coords) = c("Axis1","Axis2","Axis3")
+# Add a column containing individuals
+ind_coords$Ind = indNames(mysample.light)
+
+# Define colour palette, in accordance with how many samples you have
+cols = c("#332288", "#88CCEE", "#44AA99", "#117733", "#999933", "#DDCC77", "#661100", "#CC6677", "#882255", "#AA4499","#DDDDDD","#555555")#tol10qualitative + two
+
+#cols = brewer.pal(nPop(data.light), "Set3")
+# Custom x and y labels
+xlab = paste("Axis 1 (", format(round(percent [1], 1), nsmall=1)," %)", sep="")
+ylab = paste("Axis 2 (", format(round(percent [2], 1), nsmall=1)," %)", sep="")
+# Custom theme for ggplot2
+ggtheme = theme(axis.text.y = element_text(colour="black", size=12),
+                axis.text.x = element_text(colour="black", size=12),
+                axis.title = element_text(colour="black", size=12),
+                panel.border = element_rect(colour="black", fill=NA, linewidth=1),
+                panel.background = element_blank(),
+                plot.title = element_text(hjust=0.5, size=15))
+
+PCAplot <- ggplot(data = ind_coords, aes(x = Axis1, y = Axis2)) +
+  geom_point(aes(fill = Ind), shape = 21, size = 6, show.legend = FALSE) +
+  geom_label(data = ind_coords,
+             aes(label = Ind, fill = Ind, alpha = 0.5, size = 4), show.legend = FALSE) +
+  scale_fill_manual(values = cols) +
+  scale_colour_manual(values = cols) +
+  labs(x = xlab, y = ylab) +
+  ggtheme
+  
+PCAplot
+
+
+ggsave(PCAplot, 
+       filename = "{output_directory_path}",
+       device = "pdf",
+       height = 4, width = 4, units = "in")
