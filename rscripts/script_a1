@@ -1,0 +1,36 @@
+# This is a Bash script. For those running the script in a SLURM-based HPC environment, these were the job resource requests. Those not executing a SLURM job should skip to 'Renaming SVIM-asm VCF'.
+
+#!/bin/bash
+
+#SBATCH --job-name={}
+#SBATCH -p shared
+#SBATCH --mem=10G
+#SBATCH -c 4
+#SBATCH -t 1:59:59
+#SBATCH --mail-type=ALL
+
+# Renaming SVIM-asm VCF so chromosome names match PanSN format
+## Note that {$Haplotype_ID} should be a number, 1 is acceptable for haploid assemblies. Repeat "-e ..." for as many chromosomes as you have
+sed -e 's/{$ORIGINAL_CHROMOSOME_NAME_STRING}/{$VARIETAL}#{$Haplotype_ID}#{$contig1/g}' 
+'{$input_svim-asm_file.vcf}' > '{$renamed_input_svim-asm_file.vcf'
+## Repeat for as many SVIM-asm VCFs as you need to process
+
+# Renaming PGGB VCF so chromosome names match PanSN format
+## Define PGGB VCF file inputs (a single VCF file is produced for every defined reference sequence in the PGGB --vcf-spec command; defined all the VCFs output)
+vcf_files=("{$pggb_vcf1.vcf}" "{$pggb_vcf2.vcf}")
+# Define output file
+output_file="{$renamed_pggb_concatenated.vcf}"
+# Print the first 10 lines of the first VCF file with ##info
+head -n 10 "${vcf_files [0]}" >> "$output_file"
+# Print the contig ids from each VCF file (chromosome names)
+for vcf in "${vcf_files [@]}"; do
+  sed -n '11p' "$vcf" >> "$output_file"
+done
+# Print the column header line from the first VCF file
+sed -n '12p' "${vcf_files [0]}" >> "$output_file"
+# Print all lines from the 13th line onwards for each VCF file
+for vcf in "${vcf_files [@]}"; do
+  tail -n +13 "$vcf" >> "$output_file"
+done
+
+# All PanSN renaming is done. And we've concatenated the (many) PGGB VCF outputs into 1 file.
