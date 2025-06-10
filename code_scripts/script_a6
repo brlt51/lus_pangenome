@@ -1,0 +1,174 @@
+library(readr)
+library(tidyr)
+library(dplyr)
+library(vcfR)
+library(stringr)
+library(ggplot2)
+library(reshape2)
+library(ggridges)
+library(forcats)
+library(readxl)
+
+## FUNCTIONAL ANNOTATIONS OF SVS
+# GO term and Functional Annotation
+go_functions <- read_csv("{~/goterms_with_functions.csv}") #input list of go terms and associated functions
+colnames(go_functions) <- c("GO", "GO_Function")
+norepeat_go_functions <- distinct(go_functions)
+
+# associating pacids (from transcript annotation) present in pangenome SVs) to their GO term
+vcf_filtered_annotation <- read.delim("{~/annotation_information_with_pacid_and_go.txt}", header=FALSE, comment.char="#")
+vcf_filtered_annotation <- vcf_filtered_annotation %>%
+  select(V1, V10)#for pacid and corresponding GO column lists
+colnames(vcf_filtered_annotation) <- c("pacid", "GO")
+vcf_annotation_split <- vcf_filtered_annotation %>%
+  separate_rows(GO, sep = ",") # make sure grouped GO terms (e.g. GO:0001242, GO:1243456 are separated). This allows multiple functions to be appropriately extracted from a single pacid
+
+# find the matching functional annotation for each pacid
+pacid_gofunction <- merge(norepeat_go_functions, vcf_annotation_split, by = "GO")
+
+# load pangenome SVs information with associated pacids
+pacid_data <- read_excel("{~/list_of_pacids_found_within_SVs}")
+
+filter_rows <- function(pacid_data, pacid_gofunction) {
+  # Ensure 'pacid' columns are treated as character
+  pacid_data$pacid <- as.character(pacid_data$pacid)
+  pacid_gofunction$pacid <- as.character(pacid_gofunction$pacid)
+  
+  # Identify rows where any values in 'pacid' match the values in pacid_gofunction
+  pacid_data$Matches <- sapply(pacid_data$pacid, function(text) {
+    # Split the text in 'pacid' into individual elements
+    values <- unlist(strsplit(text, ","))
+    # Check if any of the values are in pacid_gofunction$pacid
+    any(values %in% pacid_gofunction$pacid)
+  })
+  
+  # Filter rows where Matches is TRUE
+  filtered_df <- pacid_data [pacid_data$Matches, ]
+  
+  # Create a new column with the matching pacid_gofunction$pacid values
+  filtered_df$Matched_pacid <- sapply(filtered_df$pacid, function(text) {
+    values <- unlist(strsplit(text, ","))
+    paste(intersect(values, pacid_gofunction$pacid), collapse = ", ")
+  })
+  # Drop the temporary 'Matches' column
+  filtered_df$Matches <- NULL
+  
+  return(filtered_df)
+}
+
+pacid_filtered_df <- filter_rows(pacid_data, pacid_gofunction)
+View(pacid_filtered_df)
+
+pacid_filtered_df <- pacid_filtered_df %>%
+  select({"CHROM","POS","ID","REF","QUAL","FILTER","INFO”,{Samples list},"Matched_pacid"}) #select columns for SV information, SV presence in different varities, and pacid
+
+pacid_expanded_df <- pacid_filtered_df %>% separate_rows(Matched_pacid, sep = ", ")
+colnames(pacid_expanded_df) <- c("CHROM","POS","ID","REF","QUAL","FILTER","INFO”,{Samples list},"pacid") #give every pacid it's own row with the appropriate SV information
+
+sv_functionalannotation_df <- merge(pacid_expanded_df, pacid_gofunction, by = "pacid") #combination of pacid and GO are unique
+
+#to output just a CSV of all your SVs with the functional annotations
+write.csv(sv_functionalannotation_df, file = "{~/directory_path/SV_functional_annotation.csv}", row.names = TRUE)
+
+## MAKING FIGURES FROM FUNCTIONAL ANNOTATION OF SVS
+library(ggplot2)
+
+#annotating SVs and functions based on which varietals they occur in (e.g. I have four varietals (Atlant (cultivar), Bienne (wild), Heiya (cultivar), and Longya (cultivar))); replace and customize SV sets from “All Varietals, Multiple Varietals, Wild, Cultivar-only”
+sv_functionalannotation_df1 <- sv_functionalannotation_df %>%
+  mutate(Varietal = case_when(
+    ((Atlant != "NA") & (Bienne != "NA") & (Heiya != "NA") & (Longya != "NA")) ~ "All Varietals",
+    
+    ((Bienne != "NA") & ((Atlant != "NA") | (Heiya != "NA") | (Longya != "NA"))) ~ "Multiple Varietals",
+    
+    ((Bienne %in% c(0, 1, 2, 3, 4))) ~ "Wild",
+    
+    ((Atlant %in% c(0, 1, 2, 3, 4)) & (Heiya %in% c(0, 1, 2, 3, 4)) & (Longya %in% c(0, 1, 2, 3, 4))) ~ "Cultivar-Only"
+  ))
+sv_functionalannotation_df1 <- subset(sv_functionalannotation_df1, !is.na(Varietal))
+
+go_function_list <- sv_functionalannotation_df1 %>%
+  count(GO_Function, Varietal)
+
+go_function_list1 <- go_function_list %>%
+  group_by(GO_Function) %>%
+  pivot_wider(names_from = Varietal, values_from = n, values_fill = list(n = NA))
+go_function_list1$`Total Occurrences` <- rowSums(go_function_list1 [, c("All Varietals", "Multiple Varietals", "Cultivar-Only", "Wild")], na.rm = TRUE)
+
+#calculate the ratio of SV enrichment against the pangenome SV annotation background
+go_function_list2 <- go_function_list1 %>%
+  mutate(
+    MultipleVarietalRatio = `Multiple Varietals`/`Total Occurrences`,
+    CultivarOnlyRatio = `Cultivar-Only`/`Total Occurrences`,
+    WildRatio = Wild/`Total Occurrences`
+  )
+
+#if you want the function list by SV set
+#allvar_function <- go_function_list2 %>%
+#  select("GO_Function", "All Varietals")
+#View(allvar_function)
+#cultivar_function <- go_function_list2 %>%
+#  select("GO_Function", "Cultivar-Only")
+#cultivar_function <- na.omit(cultivar_function)
+#View(cultivar_function)
+#multiple_function <- go_function_list2 %>%
+#  select("GO_Function", "Multiple Varietals")
+#multiple_function <- na.omit(multiple_function)
+#View(multiple_function)
+#wild_function <- go_function_list2 %>%
+#  select("GO_Function", "Wild")
+#wild_function <- na.omit(wild_function)
+#View(wild_function)
+
+sv_functionalannotation_df2 <- sv_functionalannotation_df1 %>%
+  left_join(go_function_list2, by = "GO_Function") #%>%
+
+# Creating bubble plots 
+# Plot for All-Cultivars
+cultivar_comparison <- sv_functionalannotation_df2 %>%
+  subset(Varietal == "Cultivar-Only") %>%
+  arrange(desc("CultivarOnlyRatio")) %>%
+  select("GO_Function","Total Occurrences","Cultivar-Only","CultivarOnlyRatio") %>%
+  distinct()
+
+sum(cultivar_comparison$`Cultivar-Only`)
+
+cultivar_comparison$GO_Function <- factor(cultivar_comparison$GO_Function, levels = cultivar_comparison$GO_Function [order(cultivar_comparison$CultivarOnlyRatio, decreasing = FALSE)])
+View(cultivar_comparison)
+cultivarplot<-  cultivar_comparison %>%
+  arrange(desc(CultivarOnlyRatio)) %>%
+  head(25) %>%
+  
+  ggplot(aes(x = GO_Function, y = CultivarOnlyRatio, size = `Total Occurrences`)) +
+  geom_point(alpha = 0.6, color = "#F5930C") +
+  labs(y = "Ratio", x = "Functional Annotation", title = "SV Enrichment in All Cultivars") +
+  coord_flip() +
+  ylim(0.25, 1) + #x axis originally until 0.18
+  scale_size_continuous(range = c(1, 10)) + #from 1 to 10
+  theme_minimal()
+cultivarplot
+
+# Plot for Wild Flax
+wild_comparison <- sv_functionalannotation_df2 %>%
+  subset(Varietal == "Wild") %>%
+  arrange(desc(WildRatio)) %>%
+  select("GO_Function","Total Occurrences","Wild","WildRatio") %>%
+  distinct()
+
+wild_comparison$GO_Function <- factor(wild_comparison$GO_Function, levels = wild_comparison$GO_Function [order(wild_comparison$WildRatio, decreasing = FALSE)])
+
+wildplot <-  wild_comparison %>%
+  arrange(desc(WildRatio)) %>%
+  head(25) %>%
+  
+  ggplot(aes(x = GO_Function, y = WildRatio, size = `Total Occurrences`)) +
+  geom_point(alpha = 0.7, color = "#32A89B") +
+  labs(y = "Ratio", x = "Functional Annotation", title = "SV Enrichment in Wild Flax") +
+  coord_flip() +
+  ylim(0.25, 1) + #x axis originally from 0.4 to 1
+  #    scale_size_continuous(range = c(0.5, 11.5)) + #ranges from 1 to 23
+  theme_minimal()
+wildplot
+
+#save bubble plots to directory path as png
+ggsave("Cultivarplot.png", plot = cultivarplot, path = "{~/directory_path/}", width = 9.5, height = 5, units = "in", bg = "white")
+ggsave("Wildplot.png", plot = wildplot, path = "{~/directory_path/}", width = 9.5, height = 5, units = "in", bg = "white")
