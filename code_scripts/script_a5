@@ -1,0 +1,53 @@
+library(httr)
+library(jsonlite)
+library(tidytext)
+library(dplyr)
+library(stringr)
+
+# Read GO terms from the input file
+input_file <- "{/path/to/input_list_of_go_terms.txt}"
+output_file <- "/path/to/output/goterms_functions.csv"
+
+go_terms <- readLines(input_file)
+print("Initializing an empty data frame for storing results")
+
+remove(results) #if this isn't your first time runnning this code
+results <- data.frame(GO_Term = character(),
+                      Function_Name = character(),
+                      stringsAsFactors = FALSE)
+
+print("Starting iteration over each GO term and processing data")
+
+# Function to fetch the label (Function_Name) for a GO term
+get_go_label <- function(go_term) {
+  base_url <- "https://api.geneontology.org/api/ontology/term"
+  url <- paste0(base_url, "/", go_term)
+  
+  response <- GET(url)
+  
+  if (status_code(response) == 200) {
+    data <- fromJSON(content(response, "text", encoding = "UTF-8"))
+    
+    # Ensure the 'label' field exists
+    if (!is.null(data$label)) {
+      return(data$label)
+    } else {
+      return(NA)  # Ensure function always returns something
+    }
+  } else {
+    return(NA)
+  }
+}
+
+# Process each GO term and populate the data frame
+for (term in go_terms) {
+  label <- get_go_label(term)
+  results <- rbind(results, data.frame(GO_Term = term, Function_Name = label, stringsAsFactors = FALSE))
+}
+
+print("Finishing iterations")
+
+#print("First 10 results")
+#head(results)
+
+write.csv(results, output_file, row.names = FALSE)
