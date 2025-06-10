@@ -1,0 +1,106 @@
+# This is an R script. If you're running a SLURM job, you must set up your bash script appropriately for your system to run RStudio-compatible packages and libaries
+
+# Packages and Libraries
+install.packages("dplyr")
+install.packages("vcfR")
+install.packages("stringr")
+install.packages("tidyr")
+install.packages("ggplot2")
+library(ggplot2)
+library(dplyr)
+library(vcfR)
+library(stringr)
+library(tidyr)
+
+##  Analysis: SV call overlap between the PGGB VCF and the SVIM-asm VCFs for each varietal
+# VCF data loading
+pggb.vcf <- read.vcfR('{$renamed_pggb_concatenated.vcf') #I recommend you define full filepaths
+svim1.vcf <- read.vcfR('renamed_input_svim-asm_file.vcf') #repeat for as many SVIM-asm VCFs you need to validate against
+
+#  VCF data formatting
+pggb_gt_matrix <- extract.gt(pggb.vcf, return.alleles = FALSE)
+pggb.df <- as.data.frame(pggb.vcf@fix)
+pggb.df <- cbind(pggb.df, pggb_gt_matrix)
+pggb.df$POS <- as.numeric(as.character(pggb.df$POS))
+
+svim1.df <- as.data.frame(svim1.vcf@fix)
+svim1.df$POS <- as.numeric(as.character(svim1.df$POS))
+svim1.df <- svim1.df %>%
+  rename(POS2 = POS)
+
+# Function to detect near-equivalent POS values in PGGB calls (POS) and SVIM calls (POS2). Tolerated difference in position is current set to 30 (base pairs) for my dataset, you may need to adjust.
+find_matching_svim1pos2 <- function(chrom, pos, svim1.df) {
+  svim1pos2_values <- svim1.df %>%
+    filter(abs(POS2 - pos) <= 30 & CHROM == chrom) %>%
+    pull(POS2)
+  return(ifelse(length(svim1pos2_values) > 0, paste(svim1pos2_values, collapse = ","), NA))
+}
+svim1_matching_svcalls <- pggb.df %>%
+  rowwise() %>%
+  filter(any(abs(svim1.df$POS2 - POS) <= 30 & svim1.df$CHROM == CHROM)) %>%
+  mutate(POS2 = find_matching_svim1pos2(CHROM, POS, svim1.df))
+
+## Results: SV call overlap between PGGB and SVIM for each varietal
+print(c("SVIM-asm1 Matching SV Calls:",nrow(svim1_matching_svcalls)))
+
+## Analysis: Kruskal-Wallis Statistics
+# data formatting
+svim1.df$POS2 <- as.numeric(as.character(svim1.df$POS2))
+svim1_matching_svcalls$POS2 <- as.numeric(as.character(svim1_matching_svcalls$POS2))
+svim1_highconfidence_svcalls.df <- svim1_matching_svcalls %>%
+  left_join(svim1.df, by = c("CHROM", "POS2"))
+#colnames(svim1_highconfidence_svcalls.df)
+svim1_highconfidence_svcalls.df <- svim1_highconfidence_svcalls.df %>%
+  select("CHROM", "POS", "ID.y", "REF.x", "ALT.x", "QUAL.x", "FILTER.y", "INFO.y", "SVIM1") #Add additional columns for other SVIM-asm VCF names
+colnames(svim1_highconfidence_svcalls.df) <- c("CHROM", "POS", "ID", "REF", "ALT", "QUAL", "FILTER", "INFO", "SVIM1") #Add additional columns for other SVIM-asm VCF names
+svim1_highconfidence_svcalls.df$SVTYPE <- str_extract(svim1_highconfidence_svcalls.df$ID, "(?<=\\.) [A-Z]{3}(?=\\.)")
+svim1_highconfidence_svcalls.df$SVLEN <- str_extract(svim1_highconfidence_svcalls.df$INFO, "(?<=SVLEN=) [-0-9]+")
+svim1_highconfidence_svcalls.df$SVLEN <- as.numeric(as.character(svim1_highconfidence_svcalls.df$SVLEN))
+
+#combine genome-level dataframes w PGGB-validated validated
+highconfidence_svcalls.df <- rbind(SVIM1_highconfidence_svcalls.df, {$all_other_SVIM-asm_VCF_highconfidence_svcalls.df})
+highconfidence_svcalls.df_long <- pivot_longer(highconfidence_svcalls.df, cols = c("SVIM1", {$other_SVIM-asm VCF names}), names_to = "Location", values_to = "Presence")
+highconfidence_svcalls.df_long <- highconfidence_svcalls.df_long [!is.na(highconfidence_svcalls.df_long$Presence), ]
+highconfidence_svcalls.df_long$Presence <- as.numeric(as.character(highconfidence_svcalls.df_long$Presence))
+
+## Mini-Results: General SV Call Stats
+SV_presence_count <- highconfidence_svcalls.df_long %>%
+  group_by(Location) %>%
+  summarize(SV_presence = sum(Presence))
+print(SV_presence_count)
+SV_type_count <- highconfidence_svcalls.df_long %>%
+  count(SVTYPE)
+print(SV_type_count)
+
+
+## Results: Kruskal-Wallis tests
+print("KW Results by SVTYPE")
+svtype_kruskal_results <- kruskal.test(SVLEN ~ SVTYPE, data = highconfidence_svcalls.df_long)
+print(svtype_kruskal_results)
+
+print("KW Results by Location")
+kruskal_results <- kruskal.test(SVLEN ~ Location, data = highconfidence_svcalls.df_long)
+print(kruskal_results)
+
+vcf_INSdf_long <- highconfidence_svcalls.df_long %>%
+  filter(SVTYPE == "INS")
+print("KW Results by Location, for Insertions")
+insertion_kruskal_results <- kruskal.test(SVLEN ~ Location, data = vcf_INSdf_long)
+print(insertion_kruskal_results)
+
+vcf_DELdf_long <- highconfidence_svcalls.df_long %>%
+  filter(SVTYPE == "DEL")
+print("KW Results by Location, for Deletions")
+deletion_kruskal_results <- kruskal.test(SVLEN ~ Location, data = vcf_DELdf_long)
+print(deletion_kruskal_results)
+
+#the Lengths for Inversions, Tandem Duplications, Tandem Insertions, and Breakend points are not directly provided by PGGB or SVIM-asm outputs. Something like the script below, however, may work to get Inversions, Tandem Duplications, and Tandem Insertions. Breakend points have no length to extract.
+#highconfidence_svcalls.df$POS <- as.numeric(as.character(highconfidence_svcalls.df$POS))
+#highconfidence_svcalls.df $SVLEN <- str_extract(highconfidence_svcalls.df $INFO, "(?<=SVLEN=) [-0-9]+")
+#highconfidence_svcalls.df $SVLEN <- as.numeric(as.character(highconfidence_svcalls.df $SVLEN))
+#highconfidence_svcalls.df $SVLEN <- abs(highconfidence_svcalls.df $SVLEN)
+#highconfidence_svcalls.df <- highconfidence_svcalls.df %>%
+#  mutate(END = as.numeric(str_extract(INFO, "(?<=END=)\\d+"))) %>%
+#  mutate(ABS_LEN = abs(END - POS))
+#lengthsupplemented_highconfidence_svcalls.df <- highconfidence_svcalls.df %>%
+#  mutate(SVLEN = ifelse(is.na(SVLEN), ABS_LEN, SVLEN))
