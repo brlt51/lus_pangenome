@@ -1,0 +1,62 @@
+All statistics are based on contigs of size >= 3000 bp, unless otherwise noted (e.g., "# contigs (>= 0 bp)" and "Total length (>= 0 bp)" include all contigs).
+
+Assembly                     ragtag.scaffold
+# contigs (>= 0 bp)          859            
+# contigs (>= 1000 bp)       842            
+# contigs (>= 5000 bp)       259            
+# contigs (>= 10000 bp)      136            
+# contigs (>= 25000 bp)      55             
+# contigs (>= 50000 bp)      35             
+Total length (>= 0 bp)       306453633      
+Total length (>= 1000 bp)    306437269      
+Total length (>= 5000 bp)    305310171      
+Total length (>= 10000 bp)   304380547      
+Total length (>= 25000 bp)   303159979      
+Total length (>= 50000 bp)   302447177      
+# contigs                    349            
+Largest contig               24566470       
+Total length                 305673423      
+Reference length             316167074      
+GC (%)                       39.06          
+Reference GC (%)             39.49          
+N50                          20038188       
+NG50                         19230031       
+N90                          17504909       
+NG90                         16879475       
+auN                          20020378.5     
+auNG                         19355897.9     
+L50                          7              
+LG50                         8              
+L90                          14             
+LG90                         15             
+# misassemblies              2139           
+# misassembled contigs       27             
+Misassembled contigs length  301259227      
+# local misassemblies        14003          
+# scaffold gap ext. mis.     63             
+# scaffold gap loc. mis.     1633           
+# possible TEs               170            
+# unaligned mis. contigs     19             
+# unaligned contigs          187 + 86 part  
+Unaligned length             43040099       
+Genome fraction (%)          93.496         
+Duplication ratio            1.017          
+# N's per 100 kbp            2054.12        
+# mismatches per 100 kbp     797.51         
+# indels per 100 kbp         60.34          
+Largest alignment            1884770        
+Total aligned length         256365289      
+NA50                         267318         
+NGA50                        254690         
+NA90                         -              
+NGA90                        -              
+auNA                         325166.3       
+auNGA                        314374.0       
+LA50                         327            
+LGA50                        348            
+LA90                         -              
+LGA90                        -              
+K-mer-based compl. (%)       77.81          
+K-mer-based cor. length (%)  0.37           
+K-mer-based mis. length (%)  98.50          
+# k-mer-based misjoins       1030           

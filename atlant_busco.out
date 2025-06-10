@@ -1,0 +1,58 @@
+2025-01-21 10:09:42 INFO:	***** Start a BUSCO v5.3.2 analysis, current time: 01/21/2025 10:09:42 *****
+2025-01-21 10:09:42 INFO:	Configuring BUSCO with local environment
+2025-01-21 10:09:42 INFO:	Mode is genome
+2025-01-21 10:09:42 INFO:	Downloading information on latest versions of BUSCO data...
+2025-01-21 10:09:42 INFO:	Input file is /nobackup/brlt51/genome_downloads/atlant_genome/ragtag_assembly21224/ragtag.scaffold.fasta
+2025-01-21 10:09:42 INFO:	Downloading file 'https://busco-data.ezlab.org/v5/data/lineages/eudicots_odb10.2024-01-08.tar.gz'
+2025-01-21 10:09:46 INFO:	Decompressing file '/nobackup/brlt51/slurm_scripts/busco_downloads/lineages/eudicots_odb10.tar.gz'
+2025-01-21 10:10:24 INFO:	Running BUSCO using lineage dataset eudicots_odb10 (eukaryota, 2024-01-08)
+2025-01-21 10:10:25 INFO:	Running 1 job(s) on metaeuk, starting at 01/21/2025 10:10:25
+2025-01-21 11:45:05 INFO:	[metaeuk]	1 of 1 task(s) completed
+2025-01-21 11:45:17 INFO:	***** Run HMMER on gene sequences *****
+2025-01-21 11:45:17 INFO:	Running 2326 job(s) on hmmsearch, starting at 01/21/2025 11:45:17
+2025-01-21 11:46:49 INFO:	[hmmsearch]	233 of 2326 task(s) completed
+2025-01-21 11:49:52 INFO:	[hmmsearch]	466 of 2326 task(s) completed
+2025-01-21 11:53:01 INFO:	[hmmsearch]	698 of 2326 task(s) completed
+2025-01-21 11:56:11 INFO:	[hmmsearch]	931 of 2326 task(s) completed
+2025-01-21 12:02:43 INFO:	[hmmsearch]	1163 of 2326 task(s) completed
+2025-01-21 12:12:23 INFO:	[hmmsearch]	1396 of 2326 task(s) completed
+2025-01-21 12:20:29 INFO:	[hmmsearch]	1629 of 2326 task(s) completed
+2025-01-21 12:27:26 INFO:	[hmmsearch]	1861 of 2326 task(s) completed
+2025-01-21 12:31:16 INFO:	[hmmsearch]	2094 of 2326 task(s) completed
+2025-01-21 12:33:38 INFO:	[hmmsearch]	2326 of 2326 task(s) completed
+2025-01-21 12:33:47 INFO:	Extracting missing and fragmented buscos from the file refseq_db.faa...
+2025-01-21 12:33:51 INFO:	Running 1 job(s) on metaeuk, starting at 01/21/2025 12:33:51
+2025-01-21 15:05:57 INFO:	[metaeuk]	1 of 1 task(s) completed
+2025-01-21 15:06:01 INFO:	***** Run HMMER on gene sequences *****
+2025-01-21 15:06:01 INFO:	Running 141 job(s) on hmmsearch, starting at 01/21/2025 15:06:01
+2025-01-21 15:07:00 INFO:	[hmmsearch]	15 of 141 task(s) completed
+2025-01-21 15:07:56 INFO:	[hmmsearch]	29 of 141 task(s) completed
+2025-01-21 15:09:27 INFO:	[hmmsearch]	43 of 141 task(s) completed
+2025-01-21 15:10:15 INFO:	[hmmsearch]	57 of 141 task(s) completed
+2025-01-21 15:11:01 INFO:	[hmmsearch]	71 of 141 task(s) completed
+2025-01-21 15:11:50 INFO:	[hmmsearch]	85 of 141 task(s) completed
+2025-01-21 15:12:28 INFO:	[hmmsearch]	99 of 141 task(s) completed
+2025-01-21 15:12:29 INFO:	[hmmsearch]	113 of 141 task(s) completed
+2025-01-21 15:12:30 INFO:	[hmmsearch]	127 of 141 task(s) completed
+2025-01-21 15:12:34 INFO:	[hmmsearch]	141 of 141 task(s) completed
+2025-01-21 15:13:09 INFO:	Validating exons and removing overlapping matches
+2025-01-21 15:13:40 INFO:	Results:	C:95.2%[S:22.7%,D:72.5%],F:0.9%,M:3.9%,n:2326	   
+
+2025-01-21 15:13:47 INFO:	
+
+	--------------------------------------------------
+	|Results from dataset eudicots_odb10              |
+	--------------------------------------------------
+	|C:95.2%[S:22.7%,D:72.5%],F:0.9%,M:3.9%,n:2326    |
+	|2216	Complete BUSCOs (C)                       |
+	|529	Complete and single-copy BUSCOs (S)       |
+	|1687	Complete and duplicated BUSCOs (D)        |
+	|20	Fragmented BUSCOs (F)                     |
+	|90	Missing BUSCOs (M)                        |
+	|2326	Total BUSCO groups searched               |
+	--------------------------------------------------
+2025-01-21 15:13:47 INFO:	BUSCO analysis done. Total running time: 18245 seconds
+2025-01-21 15:13:47 INFO:	Results written in /nobackup/brlt51/slurm_scripts/nobackup/brlt51/genome_downloads/busco/atlant_busco
+2025-01-21 15:13:47 INFO:	For assistance with interpreting the results, please consult the userguide: https://busco.ezlab.org/busco_userguide.html
+
+2025-01-21 15:13:47 INFO:	Visit this page https://gitlab.com/ezlab/busco#how-to-cite-busco to see how to cite BUSCO

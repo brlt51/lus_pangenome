@@ -1,0 +1,55 @@
+2025-01-22 11:14:25 INFO:	***** Start a BUSCO v5.3.2 analysis, current time: 01/22/2025 11:14:25 *****
+2025-01-22 11:14:25 INFO:	Configuring BUSCO with local environment
+2025-01-22 11:14:25 INFO:	Mode is genome
+2025-01-22 11:14:25 INFO:	Input file is /nobackup/brlt51/genome_downloads/heiya_genome/ragtag_91224/chr0_inclusive_ragtag/ragtag.scaffold.fasta
+2025-01-22 11:14:25 INFO:	Running BUSCO using lineage dataset eudicots_odb10 (eukaryota, 2024-01-08)
+2025-01-22 11:14:25 INFO:	Running 1 job(s) on metaeuk, starting at 01/22/2025 11:14:25
+2025-01-22 12:27:29 INFO:	[metaeuk]	1 of 1 task(s) completed
+2025-01-22 12:27:41 INFO:	***** Run HMMER on gene sequences *****
+2025-01-22 12:27:41 INFO:	Running 2326 job(s) on hmmsearch, starting at 01/22/2025 12:27:41
+2025-01-22 12:29:12 INFO:	[hmmsearch]	233 of 2326 task(s) completed
+2025-01-22 12:32:23 INFO:	[hmmsearch]	466 of 2326 task(s) completed
+2025-01-22 12:35:45 INFO:	[hmmsearch]	698 of 2326 task(s) completed
+2025-01-22 12:39:04 INFO:	[hmmsearch]	931 of 2326 task(s) completed
+2025-01-22 12:45:54 INFO:	[hmmsearch]	1163 of 2326 task(s) completed
+2025-01-22 12:55:59 INFO:	[hmmsearch]	1396 of 2326 task(s) completed
+2025-01-22 13:04:19 INFO:	[hmmsearch]	1629 of 2326 task(s) completed
+2025-01-22 13:11:30 INFO:	[hmmsearch]	1861 of 2326 task(s) completed
+2025-01-22 13:15:32 INFO:	[hmmsearch]	2094 of 2326 task(s) completed
+2025-01-22 13:17:55 INFO:	[hmmsearch]	2326 of 2326 task(s) completed
+2025-01-22 13:18:04 INFO:	Extracting missing and fragmented buscos from the file refseq_db.faa...
+2025-01-22 13:18:08 INFO:	Running 1 job(s) on metaeuk, starting at 01/22/2025 13:18:08
+2025-01-22 15:05:32 INFO:	[metaeuk]	1 of 1 task(s) completed
+2025-01-22 15:05:35 INFO:	***** Run HMMER on gene sequences *****
+2025-01-22 15:05:35 INFO:	Running 141 job(s) on hmmsearch, starting at 01/22/2025 15:05:35
+2025-01-22 15:06:36 INFO:	[hmmsearch]	15 of 141 task(s) completed
+2025-01-22 15:07:30 INFO:	[hmmsearch]	29 of 141 task(s) completed
+2025-01-22 15:09:03 INFO:	[hmmsearch]	43 of 141 task(s) completed
+2025-01-22 15:09:40 INFO:	[hmmsearch]	57 of 141 task(s) completed
+2025-01-22 15:10:34 INFO:	[hmmsearch]	71 of 141 task(s) completed
+2025-01-22 15:11:21 INFO:	[hmmsearch]	85 of 141 task(s) completed
+2025-01-22 15:11:52 INFO:	[hmmsearch]	99 of 141 task(s) completed
+2025-01-22 15:11:53 INFO:	[hmmsearch]	113 of 141 task(s) completed
+2025-01-22 15:11:54 INFO:	[hmmsearch]	127 of 141 task(s) completed
+2025-01-22 15:11:57 INFO:	[hmmsearch]	141 of 141 task(s) completed
+2025-01-22 15:12:28 INFO:	Validating exons and removing overlapping matches
+2025-01-22 15:12:59 INFO:	Results:	C:95.2%[S:25.6%,D:69.6%],F:1.0%,M:3.8%,n:2326	   
+
+2025-01-22 15:13:02 INFO:	
+
+	--------------------------------------------------
+	|Results from dataset eudicots_odb10              |
+	--------------------------------------------------
+	|C:95.2%[S:25.6%,D:69.6%],F:1.0%,M:3.8%,n:2326    |
+	|2214	Complete BUSCOs (C)                       |
+	|595	Complete and single-copy BUSCOs (S)       |
+	|1619	Complete and duplicated BUSCOs (D)        |
+	|23	Fragmented BUSCOs (F)                     |
+	|89	Missing BUSCOs (M)                        |
+	|2326	Total BUSCO groups searched               |
+	--------------------------------------------------
+2025-01-22 15:13:02 INFO:	BUSCO analysis done. Total running time: 14317 seconds
+2025-01-22 15:13:02 INFO:	Results written in /nobackup/brlt51/slurm_scripts/nobackup/brlt51/genome_downloads/busco/heiya_busco
+2025-01-22 15:13:02 INFO:	For assistance with interpreting the results, please consult the userguide: https://busco.ezlab.org/busco_userguide.html
+
+2025-01-22 15:13:02 INFO:	Visit this page https://gitlab.com/ezlab/busco#how-to-cite-busco to see how to cite BUSCO
