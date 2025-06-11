@@ -17,7 +17,8 @@ Address: Durham DH1 3LE
 Email: a.c.brennan@durham.ac.uk  
 
 Date of genome asm data collection: 2024-11-21 from NCBI PRNJ databases (https://www.ncbi.nlm.nih.gov/datasets/genome/)  
-  Data derived from other sources:  
+
+Data derived from other sources:  
     You FM, Xiao J, Li P, Yao Z, Jia G, He L, et al. Chromosome‐scale pseudomolecules refined by optical, physical and genetic maps in flax. Plant J. 2018;95(2):371–84.  
     Dvorianinova EM, Bolsheva NL, Pushkova EN, Rozhmina TA, Zhuchenko AA, Novakovskiy RO, et al. Isolating Linum usitatissimum L. nuclear DNA enabled assembling high-quality genome. Int J Mol Sci. 2022;23(21):13244.  
     Zhang J, Qi Y, Wang L, Wang L, Yan X, Dang Z, et al. Genomic comparison and population diversity analysis provide insights into the domestication and improvement of flax. Iscience. 2020;23(4).  
