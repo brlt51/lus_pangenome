@@ -3,13 +3,13 @@ This readme file was generated on 2025-06-10 by Esme Padgett
 GENERAL INFORMATION  
 Title of Dataset: Lus_pangenome_draft
 
-Author/Principal Investigator Information  
+Author  
 Name: Esme Padgett  
 Institution: Durham University  
 Address: Durham DH1 3LE  
 Email: esme.padgett@durham.ac.uk  
 
-Author/Associate or Co-investigator Information  
+Author  
 Name: Adrian Brennan  
 ORCID: https://orcid.org/0000-0002-8171-769X  
 Institution: Durham University  
