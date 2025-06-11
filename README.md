@@ -29,8 +29,8 @@ Use at your own peril. :)
 If you post to the issues page on the GitHub itself, I might not reply in a reasonable time.
 So, please feel free shoot me an email at esme.padgett@durham.ac.uk.  
 
-SHARING INFORMATION
-If using the data/code contained within this repository, or its associated pangenome/genome assembly data deposited in [], please cite:  
+SHARING INFORMATION  
+If using the data/code contained within this repository, or its associated pangenome/genome assembly data deposited in [repository/deposit link], please cite:  
     (https://github.com/espadgett/lus_pangenome)  
     [paper citation will be inserted if/when available]  
 
