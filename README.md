@@ -84,6 +84,7 @@ METHODOLOGICAL INFORMATION
 Methods are described in [paper citation will be inserted if/when available]  
 
 And in greater detail, if it would be helpful, I have described my methods in my Master's thesis, when this project took place:  
-[link to durham thesis]
+*FOLDER docx*
+**PadgettMBiolThesis.pdf**
 
 
